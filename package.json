@@ -1,6 +1,6 @@
 {
   "name": "devil-x-adi-md",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -9,7 +9,6 @@
     "@whiskeysockets/baileys": "latest",
     "express": "latest",
     "pino": "latest",
-    "dotenv": "latest",
-    "qrcode-terminal": "latest"
+    "dotenv": "latest"
   }
 }
