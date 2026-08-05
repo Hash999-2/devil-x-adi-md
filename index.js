@@ -33,7 +33,7 @@ async function startBot(number = null) {
     try {
 
         const { state, saveCreds } =
-            await useMultiFileAuthState("./session");
+            await useMultiFileAuthState("./session2");
 
 
         sock = makeWASocket({
