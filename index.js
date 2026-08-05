@@ -11,14 +11,13 @@ const app = express();
 app.use(express.json());
 
 let sock;
-let pairingRequested = false;
 
 
-// ===============================
-// START BOT
-// ===============================
+// ======================
+// START WHATSAPP BOT
+// ======================
 
-async function startBot(phoneNumber = null) {
+async function startBot(number = null) {
 
     const { state, saveCreds } = await useMultiFileAuthState("./session");
 
@@ -32,40 +31,39 @@ async function startBot(phoneNumber = null) {
     sock.ev.on("creds.update", saveCreds);
 
 
-    // Pairing Code
-    if (phoneNumber && !sock.authState?.creds?.registered) {
+    if(number){
 
-        setTimeout(async () => {
+        setTimeout(async()=>{
 
-            try {
+            try{
 
-                let code = await sock.requestPairingCode(phoneNumber);
+                const code = await sock.requestPairingCode(number);
 
                 console.log(
                     "PAIRING CODE:",
                     code
                 );
 
-            } catch (err) {
+            }catch(err){
 
                 console.log(
-                    "Pairing error:",
-                    err
+                    "PAIR ERROR:",
+                    err.message
                 );
 
             }
 
-        },3000);
+        },5000);
 
     }
 
 
-    sock.ev.on("connection.update", (update)=>{
+    sock.ev.on("connection.update",(update)=>{
 
-        const { connection, lastDisconnect } = update;
+        const {connection,lastDisconnect}=update;
 
 
-        if(connection === "open"){
+        if(connection==="open"){
 
             console.log(
                 "DEVIL X ADI CONNECTED ✅"
@@ -74,25 +72,19 @@ async function startBot(phoneNumber = null) {
         }
 
 
-        if(connection === "close"){
+        if(connection==="close"){
 
-            let reason =
+            const reason =
             lastDisconnect?.error?.output?.statusCode;
 
 
             if(reason !== DisconnectReason.loggedOut){
 
                 console.log(
-                    "Reconnecting..."
+                    "Restarting..."
                 );
 
                 startBot();
-
-            } else {
-
-                console.log(
-                    "Logged out"
-                );
 
             }
 
@@ -105,13 +97,14 @@ async function startBot(phoneNumber = null) {
 }
 
 
-// ===============================
+
+// ======================
 // PAIR API
-// ===============================
+// ======================
 
-app.post("/pair", async(req,res)=>{
+app.post("/pair",async(req,res)=>{
 
-    let { number } = req.body;
+    const {number}=req.body;
 
 
     if(!number){
@@ -124,43 +117,40 @@ app.post("/pair", async(req,res)=>{
     }
 
 
-    try{
-
-        await startBot(number);
+    startBot(number);
 
 
-        res.json({
+    res.json({
 
-            status:true,
+        status:true,
 
-            message:
-            "Pairing code requested. Check Render logs."
+        message:
+        "Pairing started. Check logs."
 
-        });
-
-
-    }catch(e){
-
-
-        res.json({
-
-            status:false,
-
-            error:e.message
-
-        });
-
-
-    }
+    });
 
 
 });
 
 
 
-// ===============================
+// Browser test
+app.get("/pair/:number",(req,res)=>{
+
+    startBot(req.params.number);
+
+
+    res.send(
+        "Pairing started. Check Render logs."
+    );
+
+});
+
+
+
+// ======================
 // HOME
-// ===============================
+// ======================
 
 app.get("/",(req,res)=>{
 
@@ -172,9 +162,9 @@ app.get("/",(req,res)=>{
 
 
 
-// ===============================
+// ======================
 // SERVER
-// ===============================
+// ======================
 
 app.listen(3000,()=>{
 
