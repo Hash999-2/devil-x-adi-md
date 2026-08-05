@@ -8,110 +8,181 @@ const {
 const pino = require("pino");
 
 const app = express();
+
 app.use(express.json());
 
-let sock;
+let sock = null;
+let connecting = false;
 
 
-// ======================
-// START WHATSAPP BOT
-// ======================
+// =======================
+// START WHATSAPP
+// =======================
 
 async function startBot(number = null) {
 
-    const { state, saveCreds } = await useMultiFileAuthState("./session");
-
-    sock = makeWASocket({
-        auth: state,
-        logger: pino({ level: "silent" }),
-        printQRInTerminal: true
-    });
-
-
-    sock.ev.on("creds.update", saveCreds);
-
-
-    if(number){
-
-        setTimeout(async()=>{
-
-            try{
-
-                const code = await sock.requestPairingCode(number);
-
-                console.log(
-                    "PAIRING CODE:",
-                    code
-                );
-
-            }catch(err){
-
-                console.log(
-                    "PAIR ERROR:",
-                    err.message
-                );
-
-            }
-
-        },5000);
-
+    if (connecting) {
+        console.log("Already connecting...");
+        return;
     }
 
+    connecting = true;
 
-    sock.ev.on("connection.update",(update)=>{
+    try {
 
-        const {connection,lastDisconnect}=update;
+        const { state, saveCreds } =
+        await useMultiFileAuthState("./session");
 
 
-        if(connection==="open"){
+        sock = makeWASocket({
 
-            console.log(
-                "DEVIL X ADI CONNECTED ✅"
-            );
+            auth: state,
+
+            logger:
+            pino({
+                level:"silent"
+            })
+
+        });
+
+
+        sock.ev.on(
+            "creds.update",
+            saveCreds
+        );
+
+
+        // Pairing code
+
+        if(number && !state.creds.registered){
+
+            setTimeout(async()=>{
+
+                try{
+
+                    let code =
+                    await sock.requestPairingCode(number);
+
+                    console.log(
+                        "PAIRING CODE:",
+                        code
+                    );
+
+                }catch(e){
+
+                    console.log(
+                        "PAIR ERROR:",
+                        e.message
+                    );
+
+                }
+
+            },3000);
 
         }
 
 
-        if(connection==="close"){
 
-            const reason =
-            lastDisconnect?.error?.output?.statusCode;
+        sock.ev.on(
+        "connection.update",
+        async(update)=>{
 
 
-            if(reason !== DisconnectReason.loggedOut){
+            const {
+                connection,
+                lastDisconnect
+            } = update;
+
+
+
+            if(connection === "open"){
 
                 console.log(
-                    "Restarting..."
+                    "DEVIL X ADI CONNECTED ✅"
                 );
 
-                startBot();
+                connecting=false;
 
             }
 
-        }
 
 
-    });
+            if(connection === "close"){
 
+                connecting=false;
+
+
+                let reason =
+                lastDisconnect
+                ?.error
+                ?.output
+                ?.statusCode;
+
+
+
+                if(reason !== DisconnectReason.loggedOut){
+
+                    console.log(
+                        "Reconnecting in 10 seconds..."
+                    );
+
+
+                    setTimeout(()=>{
+
+                        startBot();
+
+                    },10000);
+
+
+                }else{
+
+                    console.log(
+                        "Logged out"
+                    );
+
+                }
+
+            }
+
+
+        });
+
+
+
+    }catch(err){
+
+        connecting=false;
+
+        console.log(
+            "START ERROR:",
+            err.message
+        );
+
+    }
 
 }
 
 
 
-// ======================
+// =======================
 // PAIR API
-// ======================
+// =======================
+
 
 app.post("/pair",async(req,res)=>{
 
-    const {number}=req.body;
+    const number=req.body.number;
 
 
     if(!number){
 
         return res.json({
+
             status:false,
-            message:"Number required"
+
+            message:
+            "Number required"
+
         });
 
     }
@@ -125,7 +196,7 @@ app.post("/pair",async(req,res)=>{
         status:true,
 
         message:
-        "Pairing started. Check logs."
+        "Pairing started check logs"
 
     });
 
@@ -134,23 +205,31 @@ app.post("/pair",async(req,res)=>{
 
 
 
+
 // Browser test
+
 app.get("/pair/:number",(req,res)=>{
 
-    startBot(req.params.number);
+
+    startBot(
+        req.params.number
+    );
 
 
     res.send(
-        "Pairing started. Check Render logs."
+        "Pairing started"
     );
+
 
 });
 
 
 
-// ======================
+
+
+// =======================
 // HOME
-// ======================
+// =======================
 
 app.get("/",(req,res)=>{
 
@@ -162,9 +241,7 @@ app.get("/",(req,res)=>{
 
 
 
-// ======================
-// SERVER
-// ======================
+
 
 app.listen(3000,()=>{
 
