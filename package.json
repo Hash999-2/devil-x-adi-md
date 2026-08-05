@@ -9,7 +9,7 @@
     "@whiskeysockets/baileys": "latest",
     "express": "latest",
     "pino": "latest",
-    "dotenv": "latest"
+    "dotenv": "latest",
     "qrcode-terminal": "latest"
   }
 }
