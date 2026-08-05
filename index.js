@@ -1,8 +1,7 @@
 const express = require("express");
 const {
-  default: makeWASocket,
-  useMultiFileAuthState,
-  DisconnectReason
+    default: makeWASocket,
+    useMultiFileAuthState
 } = require("@whiskeysockets/baileys");
 const pino = require("pino");
 
@@ -13,39 +12,38 @@ let sock;
 
 async function startBot() {
 
-  const { state, saveCreds } = await useMultiFileAuthState("./session");
+    const { state, saveCreds } = await useMultiFileAuthState("./session");
 
-  sock = makeWASocket({
-    auth: state,
-    logger: pino({ level: "silent" })
-  });
+    sock = makeWASocket({
+        auth: state,
+        logger: pino({ level: "silent" })
+    });
 
-  sock.ev.on("creds.update", saveCreds);
+    sock.ev.on("creds.update", saveCreds);
 
-  sock.ev.on("connection.update", (update)=>{
+    sock.ev.on("connection.update", async(update)=>{
 
-    const {connection} = update;
+        const { connection } = update;
 
-    if(connection === "open"){
-      console.log("DEVIL X ADI CONNECTED");
-    }
+        if(connection === "open"){
+            console.log("DEVIL X ADI CONNECTED ✅");
+        }
 
-    if(connection === "close"){
-      startBot();
-    }
-
-  });
-
+        if(connection === "close"){
+            console.log("Reconnecting...");
+            startBot();
+        }
+    });
 }
 
 startBot();
 
 
 app.get("/", (req,res)=>{
-  res.send("DEVIL X ADI BOT ONLINE");
+    res.send("DEVIL X ADI BOT ONLINE 🔥");
 });
 
 
 app.listen(3000,()=>{
- console.log("Server running");
+    console.log("Server running");
 });
