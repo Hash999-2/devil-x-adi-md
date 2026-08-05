@@ -10,5 +10,6 @@
     "express": "latest",
     "pino": "latest",
     "dotenv": "latest"
+    "qrcode-terminal": "latest"
   }
 }
